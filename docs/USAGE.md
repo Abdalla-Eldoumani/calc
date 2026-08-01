@@ -1,103 +1,228 @@
-# Using the ARMv8 Calculator
+# Using calc
 
 ## Table of Contents
 1. [Building from Source](#building-from-source)
 2. [Basic Usage](#basic-usage)
-3. [Input Guidelines](#input-guidelines)
-4. [Error Messages](#error-messages)
-5. [Examples](#examples)
+3. [The Keys](#the-keys)
+4. [Entry Modes](#entry-modes)
+5. [Input Guidelines](#input-guidelines)
+6. [How Results Are Displayed](#how-results-are-displayed)
+7. [Error Messages](#error-messages)
+8. [Examples](#examples)
 
 ## Building from Source
 
 ### Option 1: Using Make
 1. Clone the repository
 ```bash
-git clone https://github.com/Abdalla-Eldoumani/ARMv8-Assembly-Calculator.git
-cd arm-calculator
+git clone https://github.com/Abdalla-Eldoumani/calc.git
+cd calc
 ```
-2. Run ```make```
+2. On an ARMv8 machine run ```make```, and from an x86 host run ```make cross```
 3. Run the executable
 ```bash
 ./calculator
 ```
+```make run``` does the same thing and picks qemu for you when you are not on ARM.
 
-### Option 2: Using GCC
-1. Clone the repository, if you haven't already it's the same as above
-2. Compile the source code
+### Option 2: By hand
+The source uses m4 register aliases, so it goes through m4 before the assembler:
 ```bash
-gcc calculator.s -o calculator
+m4 src/calculator.s > calculator.gen.s
+gcc -static calculator.gen.s -o calculator -lm
 ```
+```-lm``` is what supplies sqrt, pow, sin, cos, tan, log, log10 and exp.
 
 ## Basic Usage
-The calculator operates in an interactive mode:
+calc draws a calculator in your terminal and takes the keyboard over. Type at
+it and the matching key lights up. Press ```q``` to give the terminal back.
 
-1. Enter the first operand
-2. Enter an operator from the following list: +, -, *, /
-3. Enter the second operand
-4. The result will be displayed
+The display has three parts:
+
+- an indicator strip: DEG or RAD, M when memory holds something, IMM or EXPR
+  for the entry mode, and ERR when something went wrong
+- a working line, dim, showing the calculation as you build it
+- the reading, bright, showing the number the calculator is holding
+
+Under the display is a tape of the last three completed calculations, and under
+that the key grid.
+
+## The Keys
+Every key on the grid can be reached two ways: type the character it carries,
+or walk the highlight to it with the arrow keys and press enter. The highlight
+starts on ```=```, so enter works as equals until you move it.
+
+| Key | Type | What it does |
+|-----|------|--------------|
+| digits, ```.``` | ```0```-```9```, ```.``` | enter a number |
+| ```+``` ```-``` ```*``` ```/``` | same | the four operations |
+| ```x^y``` | ```^``` | raise to a power |
+| ```=``` | ```=``` or enter | finish the calculation |
+| ```+/-``` | ```~``` | flip the sign |
+| ```<-``` | backspace | delete one character |
+| ```C``` | ```C``` | clear the entry |
+| ```AC``` | ```A``` | clear the whole calculation |
+| ```sqrt``` | ```v``` | square root |
+| ```x^2``` | grid only | square |
+| ```1/x``` | ```i``` | reciprocal |
+| ```%``` | ```%``` | percent, see below |
+| ```sin``` ```cos``` ```tan``` | ```s``` ```c``` ```t``` | trigonometry, in DEG or RAD |
+| ```log``` | ```g``` | logarithm base 10 |
+| ```ln``` | ```n``` | natural logarithm |
+| ```e^x``` | ```e``` | exponential |
+| ```pi``` | ```p``` | 3.141592654 |
+| ```(``` ```)``` | same | grouping, expression mode only |
+| ```MC``` ```MR``` ```M+``` ```M-``` | ```w``` ```r``` ```m``` ```M``` | memory |
+| ```DRG``` | ```d``` | switch between degrees and radians |
+| ```MODE``` | tab | switch between entry modes |
+| quit | ```q``` | restore the terminal and exit |
+
+## Entry Modes
+### Immediate (IMM)
+A pocket calculator. Each operator finishes the one before it, so the
+calculation runs left to right and ```2 + 3 * 4 =``` reads 20. Function keys act
+on whatever the reading is showing the moment you press them, so ```2```
+```sqrt``` gives 1.414213562 straight away.
+
+Pressing an operator twice replaces it rather than stacking: ```5 + * 3 =``` is
+15.
+
+### Expression (EXPR)
+You type the whole thing, then press ```=```. Multiplication binds tighter than
+addition and parentheses override both, so ```2+3*4``` is 14 and ```(2+3)*4```
+is 20. Function keys insert their name and an open bracket, so pressing
+```sqrt``` gives you ```sqrt(``` to fill in.
+
+```^``` is right-associative and its exponent may be negative, so ```2^-1``` is
+0.5. A leading minus binds looser than a power, so ```-2^2``` is -4.
+
+The mode key clears the calculation on the way through, because half a chain
+does not mean anything in the other mode. Memory, DEG/RAD and the tape carry
+over.
 
 ## Input Guidelines
-### Operands
-- If the operand is an integer, it should be as follows: ```123 or -123 or 0```
-- If the operand is a decimal, it should be as follows: ```123.456 or -123.456 or 0.456 or .456```
-- Maximum number of digits is 20
-- Leading/trailing spaces are allowed
-- Leading zeros are allowed: 007 = 7
+### Numbers
+- Integers and decimals: ```123```, ```0.456```, ```.456```, ```5.```
+- Leading zeros are fine: ```007``` is 7
+- One decimal point per number; the second press is ignored
+- Negatives come from the ```+/-``` key, not from typing a minus in front
 
-### Operators
-- The operator should be one of the following: ```+ - * /```
+### Limits
+- A number stops accepting at 20 characters
+- An expression stops accepting at 40 characters
+- Scientific notation cannot be typed in, though results are shown in it
 
-### Restrictions
-- Scientific notation not supported (e.g., 1e5)
-- Only one decimal point allowed per number
-- Only one operator allowed
-- No expressions or parentheses
+### Clearing
+- ```C``` takes back the entry and leaves the rest of the calculation alone. In
+  expression mode the expression is the entry, so ```C``` takes the whole line.
+- ```AC``` clears the calculation: the entry, the running total and the pending
+  operator. Memory and the tape survive; memory belongs to ```MC```.
+- After an error, ```C``` behaves like ```AC```, because the calculation it was
+  part of can no longer be finished.
+
+### Percent
+Percent follows the convention pocket calculators ship, and it reads the same in
+both entry modes.
+
+- After ```+``` or ```-``` it is that percent **of the running total**, which is
+  how you add a tip or take a discount: ```200 + 10 % =``` is 220 and
+  ```200 - 10 % =``` is 180.
+- After ```*``` or ```/``` it is a plain hundredth: ```200 * 10 % =``` is 20 and
+  ```200 / 10 % =``` is 2000.
+- With nothing pending it is a plain hundredth too: ```50 %``` is 0.5.
+
+In expression mode the same rule applies to the operator immediately to the
+left, so ```200+10%``` is 220 and ```200*10%``` is 20. A percent that is then
+operated on again is a hundredth and stays one: ```200+10%*2``` is 200.2.
+
+### Memory
+```M+``` and ```M-``` add and subtract the reading. ```MR``` recalls it as the
+current entry, ```MC``` empties it. The M lamp is lit whenever memory holds
+something other than zero.
+
+## How Results Are Displayed
+Results carry **10 significant digits** and trailing zeros are trimmed, which is
+what a scientific calculator shows and why ```0.1 + 0.2``` reads 0.3 rather than
+the 0.30000000000000004 a double actually holds. The arithmetic underneath is
+full double precision; only the display rounds.
+
+Two rules follow from that and are worth knowing:
+
+- **Near-zero snap.** Anything smaller than 1e-10 displays as 0. Without it
+  ```sin(pi)``` in RAD would read 1.224646799e-16, which is rounding dust rather
+  than an answer.
+- **Mantissa fallback.** Once a number needs more than ten places on either side
+  of the point, the display switches to a mantissa and a decade:
+  ```1.23456789e+14```, ```3e-09```.
 
 ## Error Messages
 
 | Error Message | Cause | Solution |
 |--------------|-------|----------|
-| "Error: Invalid number format!" | Non-numeric input or invalid characters | Use only numbers, decimal point, and minus sign |
-| "Error: Division by zero!" | Attempted division by zero | Use non-zero divisor |
-| "Error: Invalid operator!" | Operator not recognized | Use only +, -, *, / |
-| "Error: Input too long!" | Input exceeds 20 characters | Shorten input |
+| "div by zero" | Divided by zero, or took the reciprocal of zero | Use a non-zero divisor |
+| "sqrt of neg" | Square root of a negative number | Take the root of a non-negative number |
+| "log of <= 0" | ```log``` or ```ln``` of zero or a negative number | Use a positive number |
+| "overflow" | The result passed 1e100 | Work with smaller numbers |
+| "syntax" | The expression could not be read: an unclosed bracket, a trailing operator, a word that is not a function | Fix the expression and press ```=``` again |
+| "undefined" | The operation has no real answer, such as a negative number to a fractional power | Check the operands |
+
+The reading turns red, the ERR lamp lights, and every key except ```C``` and
+```AC``` is ignored until you clear it. Nothing is ever printed outside the
+frame.
 
 ## Examples
-### Valid Inputs
+
+### Immediate mode
 ```txt
-# Basic arithmetic
-Enter Operand1: 5
-Enter Operator (+, -, *, /): +
-Enter Operand2: 3
-Result: 8.00000000
+keys      5 + 3 =
+working   5 + 3 =
+reading   8
 
-# Decimal numbers
-Enter Operand1: 3.14
-Enter Operator (+, -, *, /): *
-Enter Operand2: 2
-Result: 6.28000000
+keys      2 sqrt
+working   sqrt(2)
+reading   1.414213562
 
-# Negative numbers
-Enter Operand1: -10
-Enter Operator (+, -, *, /): /
-Enter Operand2: 2
-Result: -5.00000000
+keys      2 + 9 sqrt =
+working   2 + sqrt(9) =
+reading   5
+
+keys      30 sin              (DEG lamp lit)
+working   sin(30)
+reading   0.5
+
+keys      200 + 10 % =
+working   200 + 10% =
+reading   220
 ```
 
-### Invalid Inputs
+### Expression mode
 ```txt
-# Invalid number
-Enter Operand1: abc
-Error: Invalid number format!
+keys      TAB 2+3*4 =
+working   2+3*4 =
+reading   14
 
-# Division by zero
-Enter Operand1: 5
-Enter Operator (+, -, *, /): /
-Enter Operand2: 0
-Error: Division by zero!
+keys      TAB (2+3)*4 =
+working   (2+3)*4 =
+reading   20
 
-# Invalid operator
-Enter Operand1: 5
-Enter Operator (+, -, *, /): %
-Error: Invalid operator!
+keys      TAB sqrt(2)*sqrt(2) =
+working   sqrt(2)*sqrt(2) =
+reading   2
 ```
+
+### Errors
+```txt
+keys      5 / 0 =
+working   5 / 0
+reading   div by zero          (ERR lamp lit)
+
+keys      4 +/- sqrt
+reading   sqrt of neg
+
+keys      TAB 2+ =
+working   2+
+reading   syntax
+```
+
+`tests/test_cases.txt` holds the full behaviour contract as input and expected
+output pairs.
