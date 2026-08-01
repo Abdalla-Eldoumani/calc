@@ -50,13 +50,36 @@ presses whatever it is sitting on, which starts on `=`.
 `docs/USAGE.md` has the rest, including what percent means and how results are
 rounded.
 
+## Console mode
+
+Not every terminal wants to be taken over, and some of them cannot draw an
+escape sequence at all. `./calculator console` skips the device and gives you a
+prompt: type an expression, get the answer, `deg` and `rad` switch the trig
+mode, `q` quits. It is the same expression engine the device runs, so
+precedence, parentheses and the function names behave identically, and because
+it writes plain text and nothing else it reads from a pipe or a file as happily
+as from a keyboard.
+
+```txt
+$ ./calculator console
+calc -- scientific calculator
+type an expression, deg or rad for the trig mode, q to quit
+calc> 2+3*4
+= 14
+calc> sqrt(9)
+= 3
+calc> q
+bye
+```
+
 ## Build and run
 
 ```bash
 make          # on an ARMv8 machine
 make cross    # from an x86 host, needs aarch64-linux-gnu-gcc
 make run      # runs it, under qemu when you are not on ARM
-./calculator
+./calculator            # the device
+./calculator console    # the line calculator
 ```
 
 The source needs `m4` (it uses m4 register aliases) and links `-lm`. The
