@@ -3,12 +3,13 @@
 ## Table of Contents
 1. [Building from Source](#building-from-source)
 2. [Basic Usage](#basic-usage)
-3. [The Keys](#the-keys)
-4. [Entry Modes](#entry-modes)
-5. [Input Guidelines](#input-guidelines)
-6. [How Results Are Displayed](#how-results-are-displayed)
-7. [Error Messages](#error-messages)
-8. [Examples](#examples)
+3. [Console Mode](#console-mode)
+4. [The Keys](#the-keys)
+5. [Entry Modes](#entry-modes)
+6. [Input Guidelines](#input-guidelines)
+7. [How Results Are Displayed](#how-results-are-displayed)
+8. [Error Messages](#error-messages)
+9. [Examples](#examples)
 
 ## Building from Source
 
@@ -21,7 +22,8 @@ cd calc
 2. On an ARMv8 machine run ```make```, and from an x86 host run ```make cross```
 3. Run the executable
 ```bash
-./calculator
+./calculator            # the full-screen device
+./calculator console    # the line calculator
 ```
 ```make run``` does the same thing and picks qemu for you when you are not on ARM.
 
@@ -34,8 +36,11 @@ gcc -static calculator.gen.s -o calculator -lm
 ```-lm``` is what supplies sqrt, pow, sin, cos, tan, log, log10 and exp.
 
 ## Basic Usage
-calc draws a calculator in your terminal and takes the keyboard over. Type at
-it and the matching key lights up. Press ```q``` to give the terminal back.
+With no argument calc draws a calculator in your terminal and takes the
+keyboard over. Type at it and the matching key lights up. Press ```q``` to give
+the terminal back. With the argument ```console``` it stays on plain text and
+runs a prompt instead; everything below describes the device unless it says
+otherwise.
 
 The display has three parts:
 
@@ -46,6 +51,41 @@ The display has three parts:
 
 Under the display is a tape of the last three completed calculations, and under
 that the key grid.
+
+## Console Mode
+```./calculator console``` skips the device and runs a prompt instead, for
+terminals that cannot draw escape sequences and for feeding input in from a
+file. Any other argument prints one usage line and exits with status 1.
+
+```txt
+calc -- scientific calculator
+type an expression, deg or rad for the trig mode, q to quit
+calc> 2+3*4
+= 14
+calc> sqrt(9)
+= 3
+calc> rad
+RAD
+calc> sin(pi)
+= 0
+calc> q
+bye
+```
+
+- One expression a line, read the way expression mode reads it: precedence,
+  parentheses, ```^```, ```%```, and the function words ```sqrt``` ```sin```
+  ```cos``` ```tan``` ```log``` ```ln``` ```exp``` and ```pi```, typed out in
+  full. Spaces anywhere are fine.
+- ```deg``` and ```rad``` switch the trig mode and answer with the mode you
+  are now in. They are lowercase, like ```q``` and ```quit```.
+- ```q``` or ```quit``` leaves, and so does the end of the input, so
+  ```./calculator console < sums.txt``` works.
+- A blank line is ignored. A line past 120 characters is refused with
+  ```too long``` rather than quietly cut short and answered.
+- Errors print the same words the device shows, one to a line, and the prompt
+  comes straight back: there is no state to clear.
+- Nothing on this path writes an escape byte and nothing changes the terminal
+  settings, so a redirected stdout holds exactly what you saw.
 
 ## The Keys
 Every key on the grid can be reached two ways: type the character it carries,
