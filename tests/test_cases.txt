@@ -5,6 +5,8 @@
 # line shows afterwards. TAB switches entry mode; cases marked [expr] are
 # in expression mode, everything else is immediate mode.
 # Results carry 10 significant digits with trailing zeros trimmed.
+# Sections 1 to 15 are the device. Section 16 is the console mode, where
+# input is a whole line typed at a prompt and output is a printed line.
 
 ## 1. Basic Operations
 1.1 Basic Addition
@@ -358,3 +360,128 @@ Expected: 2 + 5
 15.6 An Operator Opens A Fresh Slot
 Input: 2 + 5
 Expected: 2 + 5
+
+## 16. Console Mode
+# Started as ./calculator console. Input is one line typed at the calc>
+# prompt; Expected is the line printed under it. The cases run in the
+# order below, because deg and rad carry forward.
+
+16.1 Precedence At The Prompt
+Input: 2+3*4
+Expected: = 14
+
+16.2 Parentheses Override
+Input: (2+3)*4
+Expected: = 20
+
+16.3 Nested Parentheses
+Input: (1+(2*(3+4)))
+Expected: = 15
+
+16.4 A Power With A Negative Exponent
+Input: 2^-1
+Expected: = 0.5
+
+16.5 Unary Minus Binds Looser Than Power
+Input: -2^2
+Expected: = -4
+
+16.6 Spaces Anywhere
+Input:   7 * 6
+Expected: = 42
+
+16.7 Function Words Typed Out In Full
+Input: sqrt(9)
+Expected: = 3
+
+16.8 A Function Inside A Function
+Input: ln(exp(1))
+Expected: = 1
+
+16.9 Pi
+Input: pi
+Expected: = 3.141592654
+
+16.10 Percent Of The Left Operand
+Input: 200+10%
+Expected: = 220
+
+16.11 A Hundredth After Multiplication
+Input: 200*10%
+Expected: = 20
+
+16.12 Ten Significant Digits
+Input: 1/3
+Expected: = 0.3333333333
+
+16.13 Sine Of 30 Degrees
+Input: sin(30)
+Expected: = 0.5
+
+16.14 Switch To Radians
+Input: rad
+Expected: RAD
+
+16.15 Sine Of 30 Radians
+Input: sin(30)
+Expected: = -0.9880316241
+
+16.16 Sine Of Pi Radians (near-zero snap)
+Input: sin(pi)
+Expected: = 0
+
+16.17 Switch Back To Degrees
+Input: deg
+Expected: DEG
+
+16.18 Division By Zero
+Input: 1/0
+Expected: div by zero
+
+16.19 Square Root Of A Negative
+Input: sqrt(0-4)
+Expected: sqrt of neg
+
+16.20 Logarithm Of Zero
+Input: ln(0)
+Expected: log of <= 0
+
+16.21 Overflow
+Input: (10^100)^2
+Expected: overflow
+
+16.22 A Trailing Operator
+Input: 2++
+Expected: syntax
+
+16.23 A Word That Is Not A Function
+Input: foo
+Expected: syntax
+
+16.24 An Unclosed Bracket
+Input: 2+(3
+Expected: syntax
+
+16.25 A Blank Line Is Ignored
+Input: (empty, or only spaces)
+Expected: (nothing printed, the prompt returns)
+
+16.26 Past The Line Cap
+Input: 1+ repeated 90 times, then 1
+Expected: too long
+
+16.27 Quit
+Input: q
+Expected: bye
+
+16.28 Quit Spelled Out
+Input: quit
+Expected: bye
+
+16.29 End Of Input Leaves Too
+Input: (end of file with no q)
+Expected: bye
+
+16.30 An Argument That Is Not console
+Input: ./calculator foo
+Expected: usage: calculator [console]
