@@ -1,6 +1,7 @@
 # Build artifacts
 *.o
 calculator
+build/
 
 # IDE/Editor files
 .vscode/
