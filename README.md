@@ -87,4 +87,4 @@ Makefile handles both.
 
 ## Try it in a browser
 
-https://aarch64-playground.vercel.app/playground?example=calc
+https://aarch64-playground.com/playground?example=calc
